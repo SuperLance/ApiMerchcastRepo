@@ -18,7 +18,7 @@ class ShopifyAdapter
   end
 
 
-	# get orders from a Shopify store
+  # get orders from a Shopify store
   def get_orders(store)
 
     init_session(store)
@@ -51,33 +51,33 @@ class ShopifyAdapter
   def validate_store(store)
     return_data = {}
 
-  	begin
-    	orders = get_orders(store)
+    begin
+      orders = get_orders(store)
 
-    	# a bad api path shows up as a nil when orders are returned
-    	if orders.empty?
-	  		return_data[:return_code] = 404
+      # a bad api path shows up as a nil when orders are returned
+      if orders.empty?
+        return_data[:return_code] = 404
       return_data[:error_message] = "Either the store name was not found, or there are no orders for the store."
-  		else
-  			# we got orders or an empty list, so all is good
-    		return_data[:return_code] = 200
-    	end
+      else
+        # we got orders or an empty list, so all is good
+        return_data[:return_code] = 200
+      end
     rescue ActiveResource::ForbiddenAccess => e
-    	# bad api key
-    	return_data[:return_code] = 403
+      # bad api key
+      return_data[:return_code] = 403
       return_data[:error_message] = "The api key was not valid"
     rescue ActiveResource::UnauthorizedAccess => e
-    	# bad api secret
-    	return_data[:return_code] = 401
+      # bad api secret
+      return_data[:return_code] = 401
       return_data[:error_message] = "The api secret was not valid"
     rescue ActiveResource::ConnectionError => e
-    	# some sort of connection error
-    	return_data[:return_code] = 400
+      # some sort of connection error
+      return_data[:return_code] = 400
       return_data[:error_message] = e.response
     rescue => e
       puts e
       puts e.backtrace
-    	return_data[:return_code] = 500
+      return_data[:return_code] = 500
       return_data[:error_message] = "Unknown error"
     end
 
@@ -101,8 +101,19 @@ class ShopifyAdapter
     sp.save
     sp.errors.full_messages.each {|msg| print "ERROR_CREATING_SHOPIFY: " + msg + "\n"}
 
+    # geting selected sizes
+    size_ids = product.product_size_ids.split(',')
+    product_sizes = [];
+    size_ids.each do |size_id|
+      product.master_product.master_product_sizes.each do |master_size|
+        if size_id.to_i == master_size.id
+          product_sizes.push(master_size)
+        end
+      end
+    end
+    
+    sizes = product_sizes.map(&:name).sort
     colors = product.product_variant_images.map(&:name).sort
-    sizes = product.master_product.master_product_sizes.map(&:name).sort
 
     # now that the product has been initialized on shopify, upload the images, add the variants, and save it
     sp.images << {src: product.product_image.url} unless (product.product_image.nil? || colors.any?)
