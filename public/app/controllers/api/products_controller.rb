@@ -6,7 +6,11 @@ class Api::ProductsController < ApplicationController
   # GET /products.json
   def index
     @products = Product.by_user(current_user).all
-
+    @products.each do |obj|
+    end
+    Rails.logger.debug "======s"
+    Rails.logger.debug @products.to_json
+    Rails.logger.debug "======e"
     render json: @products
   end
 
@@ -19,7 +23,6 @@ class Api::ProductsController < ApplicationController
   # POST /products
   # POST /products.json
   def create
-
     @product = Product.new(product_params)
 
     current_user.products << @product
@@ -70,6 +73,8 @@ class Api::ProductsController < ApplicationController
                                       :product_image,
                                       :master_product_option_id,
                                       :master_product_size_id,
-                                      :master_product_print_area_id)
+                                      :master_product_print_area_id,
+                                      :product_color_ids,
+                                      :product_size_ids)
     end
 end
