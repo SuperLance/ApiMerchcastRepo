@@ -56,7 +56,6 @@ class SpreadshirtAdapter
     rescue => e
       return_data[:return_code] = 500
       return_data[:error_message] = "Unknown error"
-    end:error_message] = "Unknown error"
     end
 
     return return_data
@@ -72,8 +71,8 @@ class SpreadshirtAdapter
     end
   end
 
-  def getErrorMessage(e))
-    doc = Nokogiri::XML(e.response
+  def getErrorMessage(e)
+    doc = Nokogiri::XML(e.response)
     return doc.text.strip
   end
 
