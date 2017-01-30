@@ -1,0 +1,65 @@
+source 'https://rubygems.org'
+ruby '2.2.4'
+
+gem 'rails', '4.2.6'
+gem 'rails-api', '~> 0.4.0'
+gem 'active_model_serializers', '~> 0.9.5'
+gem 'pg', '~> 0.18.4'
+gem 'jbuilder', '~> 2.4.1'
+gem 'devise_token_auth', '~> 0.1.37'
+gem 'httparty', '~> 0.13'
+gem 'carrierwave', '~> 0.11.0'
+gem 'carrierwave-base64', '~> 2.2.0'
+gem 'fog', '~> 1.38.0'
+gem 'chunky_png', '~> 1.3.7'
+# local
+gem 'tzinfo-data', platforms:[:mingw, :mswin]
+gem 'stripe'
+
+# To use ActiveModel has_secure_password
+# gem 'bcrypt', '~> 3.1.7'
+
+# To use Jbuilder templates for JSON
+# gem 'jbuilder'
+
+# Use unicorn as the app server
+# gem 'unicorn'
+
+# Deploy with Capistrano
+# gem 'capistrano', :group => :development
+
+# To use debugger
+# gem 'ruby-debug19', :require => 'ruby-debug'
+
+group :development do
+  gem 'better_errors'
+  gem 'spring'
+  gem 'spring-commands-rspec'
+end
+
+group :test do
+  gem 'shoulda-matchers', require: false
+  gem 'capybara', '~> 2.6.2'
+  gem 'selenium-webdriver', '~> 2.53.0'
+  gem 'webmock', '~> 2.0.3'
+end
+
+group :development, :test do
+  gem 'factory_girl_rails', '~> 4.6.0'
+  gem 'rspec-rails', '~> 3.4.2'
+end
+
+group :production do
+  # server
+  # gem 'rails_12factor'
+  # gem "unicorn-rails"
+  # 
+  # local
+  gem 'rails_12factor'
+  gem 'passenger'
+end
+
+# gems for integrations
+gem 'shopify_api', '~> 4.2'
+gem 'bigcommerce', '>= 1.0.0.beta'
+gem 'spreadshirt_client', '~> 0.0.7'

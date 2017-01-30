@@ -1,0 +1,173 @@
+#!/bin/bash
+
+AWS=$(git config --get codedeploy.aws-path)
+AWK=$(git config --get codedeploy.awk-path)
+HEAD=$(git config --get codedeploy.head-path)
+
+REGION="us-west-2"
+
+SOURCE_DIR=$(git config --get codedeploy.source)
+
+DEPLOYMENT_PROFILE_MASTER=$(git config --get codedeploy.master.profile)
+BUCKET_NAME_MASTER=$(git config --get codedeploy.master.s3bucket)
+BRANCH_NAME_MASTER=$(git config --get codedeploy.master.branch)
+ISACTIVE_MASTER=$(git config --get codedeploy.master.active)
+APPLICATION_NAME_MASTER=$(git config --get codedeploy.master.application-name)
+DEPLOYMENT_GROUP_MASTER=$(git config --get codedeploy.master.deployment-group)
+DISABLE_ASG_MASTER=$(git config --get codedeploy.master.disable-scaling)
+ASG_MASTER=$(git config --get codedeploy.master.asg-name)
+
+DEPLOYMENT_PROFILE_STAGING=$(git config --get codedeploy.staging.profile)
+BUCKET_NAME_STAGING=$(git config --get codedeploy.staging.s3bucket)
+BRANCH_NAME_STAGING=$(git config --get codedeploy.staging.branch)
+ISACTIVE_STAGING=$(git config --get codedeploy.staging.active)
+APPLICATION_NAME_STAGING=$(git config --get codedeploy.staging.application-name)
+DEPLOYMENT_GROUP_STAGING=$(git config --get codedeploy.staging.deployment-group)
+DISABLE_ASG_STAGING=$(git config --get codedeploy.staging.disable-scaling)
+ASG_STAGING=$(git config --get codedeploy.staging.asg-name)
+
+policy='[Policy] Never force push or delete the '${BRANCH_NAME_MASTER}' branch! (Prevented with pre-push hook.)'
+
+current_branch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
+
+BUNDLE_NAME=$(echo $(basename `pwd`)-${current_branch}.zip)
+
+push_command=$(ps -ocommand= -p $PPID)
+
+is_destructive='force|delete|\-f'
+
+will_remove_master_branch=':'${BRANCH_NAME_MASTER}
+
+do_resume_asg(){
+
+  ASG_NAME="${1}"
+
+  RESUME_RESULT=$(${AWS} deploy get-deployment --region ${REGION} --profile ${DEPLOYMENT_PROFILE_RUN} \
+      --deployment-id ${DEPLOYMENT_RESULT} \
+      --output text | ${AWK} '{ print $10 }' | ${HEAD} -n 1)
+
+  if [[ $RESUME_RESULT = "Succeeded" ]] || [[ $RESUME_RESULT = "Failed" ]] || [[ $RESUME_RESULT = "Stopped" ]]; then
+
+    echo "**** RE-ENABLING AUTO-SCALING: Mode=${RUN_MODE}.. Final Deploy Status=${RESUME_RESULT} **** ASG=${ASG_NAME}" 1>&2
+    ${AWS} autoscaling resume-processes --region ${REGION} --profile ${DEPLOYMENT_PROFILE_RUN} \
+      --auto-scaling-group-name "${ASG_NAME}"
+
+  else
+
+    echo "Deployment still running.. Mode=${RUN_MODE} - (Sleeping 30).." 1>&2
+    sleep 30
+
+    do_resume_asg $ASG_NAME
+
+  fi
+
+}
+
+do_suspend_asg(){
+
+  ASG_NAME="${1}"
+
+  echo "**** DISABLING AUTO-SCALING: Mode=${RUN_MODE} **** ASG=${ASG_NAME}" 1>&2
+  ${AWS} autoscaling suspend-processes --region ${REGION}  --profile ${DEPLOYMENT_PROFILE_RUN} \
+    --auto-scaling-group-name "${ASG_NAME}"
+
+}
+
+do_exit(){
+  echo $policy
+  exit 1
+}
+
+do_push() {
+
+  # Call `aws deploy push` to create a new revision of the current repo
+  echo "Pushing ${BUNDLE_NAME} in Mode=${RUN_MODE} to s3://${BUCKET_NAME_RUN} and registering with application '${APPLICATION_NAME_RUN}'" 1>&2
+  ${AWS} deploy push --region ${REGION} --profile ${DEPLOYMENT_PROFILE_RUN} \
+    --application-name ${APPLICATION_NAME_RUN} \
+    --s3-location s3://${BUCKET_NAME_RUN}/${BUNDLE_NAME} \
+    --ignore-hidden-files \
+    --source ${SOURCE_DIR}/
+
+  revision_json="{\"revisionType\":\"S3\",\"s3Location\":{\"bucket\":\"${BUCKET_NAME_RUN}\",\"bundleType\":\"zip\",\"key\":\"${BUNDLE_NAME}\"}}"
+
+  if [ $? != 0 ]; then
+      echo "Push to codedeploy failed; skipping create-deployment" 1>&2
+  else
+
+      if [[ $DISABLE_ASG_MASTER = 1 && $current_branch = ${BRANCH_NAME_MASTER} ]]; then
+          do_suspend_asg $ASG_MASTER
+      fi
+
+      if [[ $DISABLE_ASG_STAGING = 1 && $current_branch = ${BRANCH_NAME_STAGING} ]]; then
+          do_suspend_asg $ASG_STAGING
+      fi
+
+      echo "Deploying s3://${BUCKET_NAME_RUN}/${BUNDLE_NAME} to application ${APPLICATION_NAME_RUN}, Mode=${RUN_MODE} and deployment group ${DEPLOYMENT_GROUP_RUN}" 1>&2
+
+      DEPLOYMENT_RESULT=$(${AWS} deploy create-deployment --region ${REGION} --profile ${DEPLOYMENT_PROFILE_RUN} \
+          --application-name ${APPLICATION_NAME_RUN} \
+          --deployment-group-name ${DEPLOYMENT_GROUP_RUN} \
+          --revision $revision_json \
+          --output text)
+
+      echo "Deployment ID=${DEPLOYMENT_RESULT}" 1>&2
+
+      sleep 3
+
+      if [[ $DISABLE_ASG_MASTER = 1 && $current_branch = ${BRANCH_NAME_MASTER} ]]; then
+          do_resume_asg $ASG_MASTER
+      fi
+
+      if [[ $DISABLE_ASG_STAGING = 1 && $current_branch = ${BRANCH_NAME_STAGING} ]]; then
+          do_resume_asg $ASG_STAGING
+      fi
+
+  fi
+
+  exit 0
+
+}
+
+echo "Push detected, current branch: ${current_branch}"
+echo "Mapped branches: (Master) ${BRANCH_NAME_MASTER}, (Staging) ${BRANCH_NAME_STAGING}"
+
+if [[ $ISACTIVE_MASTER != 1 && $current_branch = ${BRANCH_NAME_MASTER} ]]; then
+  echo "Code deploy routine is not active (MASTER).. graceful skip"
+  exit 0
+fi
+
+if [[ $ISACTIVE_STAGING != 1 && $current_branch = ${BRANCH_NAME_STAGING} ]]; then
+  echo "Code deploy routine is not active (Staging).. graceful skip"
+  exit 0
+fi
+
+if [[ $push_command =~ $is_destructive ]] && [[ $current_branch = ${BRANCH_NAME_MASTER} ]]; then
+  do_exit
+fi
+
+if [[ $push_command =~ $will_remove_master_branch ]]; then
+  do_exit
+fi
+
+if [[ $current_branch = ${BRANCH_NAME_MASTER} ]]; then
+  RUN_MODE=master
+  APPLICATION_NAME_RUN=${APPLICATION_NAME_MASTER}
+  DEPLOYMENT_GROUP_RUN=${DEPLOYMENT_GROUP_MASTER}
+  BUCKET_NAME_RUN=${BUCKET_NAME_MASTER}
+  DEPLOYMENT_PROFILE_RUN=${DEPLOYMENT_PROFILE_MASTER}
+  do_push
+elif [[ $current_branch = ${BRANCH_NAME_STAGING} ]]; then
+  RUN_MODE=staging
+  APPLICATION_NAME_RUN=${APPLICATION_NAME_STAGING}
+  DEPLOYMENT_GROUP_RUN=${DEPLOYMENT_GROUP_STAGING}
+  BUCKET_NAME_RUN=${BUCKET_NAME_STAGING}
+  DEPLOYMENT_PROFILE_RUN=${DEPLOYMENT_PROFILE_STAGING}
+  do_push
+else
+  echo "Current branch does not match a mapped branch (exiting)"
+  exit 0
+fi
+
+unset do_exit
+
+exit 0

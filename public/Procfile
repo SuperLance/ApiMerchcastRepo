@@ -1,0 +1,1 @@
+web: bundle exec passenger start -p $PORT --concurrency-model process --max-pool-size 3 

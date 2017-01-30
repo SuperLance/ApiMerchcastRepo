@@ -1,0 +1,26 @@
+version: 0.0
+os: linux
+files:
+  - source: /
+    destination: /var/www/html/app.merchcast.com/
+hooks:
+  ApplicationStop:
+    - location: codedeploy/scripts/application-stop.sh
+      timeout: 300
+      runas: root
+  BeforeInstall:
+    - location: codedeploy/scripts/before-install.sh
+      timeout: 300
+      runas: root
+  AfterInstall:
+    - location: codedeploy/scripts/after-install.sh 
+      timeout: 300
+      runas: root
+  ApplicationStart:
+    - location: codedeploy/scripts/application-start.sh
+      timeout: 600
+      runas: app.merchcast.com
+  ValidateService:
+    - location: codedeploy/scripts/validate-service.sh
+      timeout: 600
+      runas: root
