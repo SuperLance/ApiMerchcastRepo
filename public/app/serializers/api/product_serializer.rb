@@ -14,7 +14,7 @@ class Api::ProductSerializer < ActiveModel::Serializer
             :product_size_ids
 
 
-  has_one :master_product_size
+  has_one :master_product_size 
   has_one :master_product_option
   has_one :master_product_print_area
   has_one :master_product, serializer: ShortMstrProductSerializer

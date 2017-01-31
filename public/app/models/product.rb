@@ -17,8 +17,6 @@ class Product < ActiveRecord::Base
   mount_base64_uploader :product_image, ImageUploader
 
   validates :title, presence: true
-  validates :product_color_ids, presence: true
-  validates :product_size_ids, presence: true
   validates :price, presence: true, numericality: {}
   validates :master_product, presence: true
 
