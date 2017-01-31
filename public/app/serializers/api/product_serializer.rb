@@ -9,7 +9,9 @@ class Api::ProductSerializer < ActiveModel::Serializer
             :print_image_width,
             :print_image_height,
             :print_image,
-            :product_image
+            :product_image,
+            :product_color_ids,
+            :product_size_ids
 
 
   has_one :master_product_size
