@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170110085227) do
+ActiveRecord::Schema.define(version: 20170128200643) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -274,6 +274,8 @@ ActiveRecord::Schema.define(version: 20170110085227) do
     t.decimal  "print_image_y_offset"
     t.decimal  "print_image_width"
     t.decimal  "print_image_height"
+    t.string   "product_size_ids"
+    t.string   "product_color_ids"
   end
 
   add_index "products", ["master_product_id"], name: "index_products_on_master_product_id", using: :btree
