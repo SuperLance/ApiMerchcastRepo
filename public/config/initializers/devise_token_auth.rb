@@ -35,4 +35,3 @@ DeviseTokenAuth.setup do |config|
   # do so by enabling this flag. NOTE: This feature is highly experimental!
   # enable_standard_devise_support = false
 end
-

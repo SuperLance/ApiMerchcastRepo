@@ -70,14 +70,12 @@ class SpreadshirtAdapter
       # do nothing - nothing can be done with orphan sessions
     end
   end
-
-  def getErrorMessage(e)
+  def getErrorMessage (e)
     doc = Nokogiri::XML(e.response)
     return doc.text.strip
   end
 
   def loadProductData(printer)
-
     data = SpreadshirtClient.get "/shops/#{printer.external_shop_id}/productTypes"
     doc = Nokogiri::XML(data)
     productTypes = doc.search('productType')
@@ -252,7 +250,6 @@ class SpreadshirtAdapter
     end
   end
 
-
   ##
   # This is a different way of sending the orders.  For now, it isn't used.
   # Leave it here in case we need to fall back to this method.
@@ -327,7 +324,7 @@ class SpreadshirtAdapter
             xml.printType(:id => "17")
             xml.offset(:unit => "mm") {
               xml.x product.print_image_x_offset
-              xml.y product.print_image_y_offset
+              xml.y produletwwe can ct.print_image_y_offset
             }
             xml.content {
               xml.svg {
@@ -376,7 +373,7 @@ class SpreadshirtAdapter
     #formatted_no_decl = Nokogiri::XML::Node::SaveOptions::FORMAT + Nokogiri::XML::Node::SaveOptions::NO_DECLARATION
 
     builder = Nokogiri::XML::Builder.new do |xml|
-      xml.order(:"xmlns:xlink" => "http://www.w3.org/1999/xlink", :xmlns => "http://api.spreadshirt.net") {
+      xml.order(:"xmlns:xlink" => "http://www.w3.org/1999/xlink", :xmlns => "http://api.spreadshirt.com") {
         xml.shop(:id => printer.external_shop_id)
         xml.orderItems {
 
@@ -387,7 +384,7 @@ class SpreadshirtAdapter
             product = order_line_item.listing.product
             xml.orderItem {
               xml.quantity order_line_item.quantity
-              xml.element(:type => "sprd:product", :"xlink:href" => "http://api.spreadshirt.net/api/v1/shops/#{printer.external_shop_id}/products/#{product_attachment_name}") {
+              xml.element(:type => "sprd:product", :"xlink:href" => "http://api.spreadshirt.com/api/v1/shops/#{printer.external_shop_id}/products/#{product_attachment_name}") {
                 xml.properties{
                   xml.property(order_line_item.master_product_color.external_id, :key => "appearance")
                   xml.property(order_line_item.master_product_size.external_id, :key => "size") # size now comes from shopify
@@ -400,7 +397,7 @@ class SpreadshirtAdapter
               }
               xml.attachments {
                 xml.attachment(:type => "sprd:product", :id => product_attachment_name) {
-                  xml.product(:"xmlns:xlink" => "http://www.w3.org/1999/xlink", :xmlns => "http://api.spreadshirt.net") {
+                  xml.product(:"xmlns:xlink" => "http://www.w3.org/1999/xlink", :xmlns => "http://api.spreadshirt.com") {
                     xml.productType(:id => product.master_product.external_id)
                     xml.appearance(:id => order_line_item.master_product_color.external_id)
                     xml.restrictions {
@@ -415,10 +412,12 @@ class SpreadshirtAdapter
                           xml.x product.print_image_x_offset
                           xml.y product.print_image_y_offset
                         }
-                        xml.content {
+                        xml.content(:dpi => "25.4", :unit => "mm") {
                           xml.svg {
-                            xml.image(:width => product.print_image_width, :height => product.print_image_height,
-                                      :designId => image_attachment_name)
+                            # xml.image(:width => product.print_image_width, :height => product.print_image_height,
+                            #           :designId => image_attachment_name, :printColorIds => "")
+                            xml.image(:width => "200.025", :height => "194.945",
+                                      :designId => image_attachment_name, :printColorIds => "")
                           }
                         }
                         xml.restrictions {
@@ -429,7 +428,8 @@ class SpreadshirtAdapter
                   }
                 }
                 xml.attachment(:type => "sprd:design", :id => image_attachment_name) {
-                  xml.reference(:"xlink:href" => product.print_image.url)
+                  # xml.reference(:"xlink:href" => product.print_image.url)
+                  xml.reference(:"xlink:href" => "http://onelive-staging-s3-assets-79n297uigod0.s3.amazonaws.com/test/Wac_nearside_3000.jpg")
                 }
               }
             }
@@ -463,7 +463,7 @@ class SpreadshirtAdapter
             xml.state(order.shipping_state, :code => order.shipping_state_code)
             xml.country(order.shipping_country, :code => order.shipping_country_code)
             xml.zipCode order.shipping_postal_code
-            xml.email "test@example.com"
+            xml.email "test@example.net"
           }
         }
 
@@ -472,10 +472,18 @@ class SpreadshirtAdapter
     end
     # data = builder.to_xml( save_with:formatted_no_decl )
     data = builder.to_xml
-    response = SpreadshirtClient.post "/orders", data, authorization: true, session: session_id
+    begin
+      response = SpreadshirtClient.post "/orders", data, authorization: true, session: session_id
+    rescue Exception => e
+      Rails.logger.debug "===============start"
+      Rails.logger.debug "#{e.message}"
+      Rails.logger.debug "===============end"
+    end
+    Rails.logger.debug "===============start"
+    Rails.logger.debug data
+    Rails.logger.debug "===============end"  
     doc = Nokogiri::XML(response)
     order_id = doc.children.first[:id]
-
     return_data[:status] = "Submitted"
     return_data[:external_id] = order_id
 

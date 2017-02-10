@@ -6,9 +6,6 @@ class Api::ProductsController < ApplicationController
   # GET /products.json
   def index
     @products = Product.by_user(current_user).all
-    Rails.logger.debug "======s"
-    Rails.logger.debug @products.to_json
-    Rails.logger.debug "======e"
     render json: @products
   end
 
