@@ -5,4 +5,6 @@ class Api::UserSerializer < ActiveModel::Serializer
             :email,
             :admin,
             :shop_id
+
+    has_one :balance
 end

@@ -9,7 +9,7 @@ then
 
     RAILS_ENV=development /usr/local/bin/bundle exec rake assets:precompile
     /usr/local/bin/bundle exec rake assets:precompile RAILS_ENV=development
-    RAILS_ENV=development /usr/local/bin/bundle exec rake db:migrate
+    RAILS_ENV=development /usr/local/bin/bundle exec rake db:migrate:reset
     RAILS_ENV=development /usr/local/bin/bundle exec rake db:seed
     RAILS_ENV=production /usr/local/bin/bundle exec rake db:migrate   
     RAILS_ENV=production /usr/local/bin/bundle exec rake db:seed

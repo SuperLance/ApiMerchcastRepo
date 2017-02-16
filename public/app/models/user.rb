@@ -14,4 +14,5 @@ class User < ActiveRecord::Base
   has_many :order_line_items, dependent: :destroy
 
   belongs_to :shop
+  belongs_to :balance
 end

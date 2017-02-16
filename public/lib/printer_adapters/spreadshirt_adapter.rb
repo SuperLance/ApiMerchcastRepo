@@ -150,7 +150,7 @@ class SpreadshirtAdapter
         masterprod.master_product_sizes << mpsize
 
       end
-
+      
       # get image view data
       all_views_data = {}
       views = ptelement.css '/views/view'
@@ -367,9 +367,10 @@ class SpreadshirtAdapter
     login_data = login(printer)
     session_id = login_data[:session_id]
 
-    Rails.logger.debug "---------------start--------------"
-    Rails.logger.debug session_id
-    Rails.logger.debug "---------------end--------------"
+    Rails.logger.debug "---------- *session id for login to spreadshirt* -----------"
+    Rails.logger.debug "value:    #{session_id}"
+    Rails.logger.debug "---------- ***** -----------"
+
     #formatted_no_decl = Nokogiri::XML::Node::SaveOptions::FORMAT + Nokogiri::XML::Node::SaveOptions::NO_DECLARATION
 
     builder = Nokogiri::XML::Builder.new do |xml|
@@ -412,11 +413,16 @@ class SpreadshirtAdapter
                           xml.x product.print_image_x_offset
                           xml.y product.print_image_y_offset
                         }
-                        xml.content(:dpi => "25.4", :unit => "mm") {
+                        ##========== *calculating DPI* ===========##
+                        #  DPI =    Pixel x 25.4 / X(mm)
+                        #  
+                        order_dpi = (4000 * 25.4 / product.master_product_print_area.view_size_width).round(0)
+
+                        ##========== ***** ==========##
+                        
+                        xml.content(:dpi => order_dpi, :unit => "mm") {
                           xml.svg {
-                            # xml.image(:width => product.print_image_width, :height => product.print_image_height,
-                            #           :designId => image_attachment_name, :printColorIds => "")
-                            xml.image(:width => "200.025", :height => "194.945",
+                            xml.image(:width => (product.master_product_print_area.print_area_width/10).floor * 10, :height => (product.master_product_print_area.print_area_height/10).floor * 10,
                                       :designId => image_attachment_name, :printColorIds => "")
                           }
                         }
@@ -428,8 +434,7 @@ class SpreadshirtAdapter
                   }
                 }
                 xml.attachment(:type => "sprd:design", :id => image_attachment_name) {
-                  # xml.reference(:"xlink:href" => product.print_image.url)
-                  xml.reference(:"xlink:href" => "http://onelive-staging-s3-assets-79n297uigod0.s3.amazonaws.com/test/Wac_nearside_3000.jpg")
+                  xml.reference(:"xlink:href" => product.print_image.url)
                 }
               }
             }
@@ -472,16 +477,24 @@ class SpreadshirtAdapter
     end
     # data = builder.to_xml( save_with:formatted_no_decl )
     data = builder.to_xml
+
+    Rails.logger.debug "---------- *request body for submitting order to spreadshirt* -----------"
+    Rails.logger.debug "value:    #{data}"
+    Rails.logger.debug "---------- ***** -----------"
+
     begin
       response = SpreadshirtClient.post "/orders", data, authorization: true, session: session_id
     rescue Exception => e
-      Rails.logger.debug "===============start"
-      Rails.logger.debug "#{e.message}"
-      Rails.logger.debug "===============end"
+
+      Rails.logger.debug "---------- *exception when submiting order to spreadshirt * -----------"
+      Rails.logger.debug "value:    #{e.message}"
+      Rails.logger.debug "---------- ***** -----------"
+
     end
-    Rails.logger.debug "===============start"
-    Rails.logger.debug data
-    Rails.logger.debug "===============end"  
+    Rails.logger.debug "---------- *response data when is submitted some orders to spreadshirt* -----------"
+    Rails.logger.debug "value:    #{response}"
+    Rails.logger.debug "---------- ***** -----------"
+
     doc = Nokogiri::XML(response)
     order_id = doc.children.first[:id]
     return_data[:status] = "Submitted"
@@ -494,6 +507,9 @@ class SpreadshirtAdapter
     login_data = login(printer_order.printer)
     session_id = login_data[:session_id]
 
+    Rails.logger.debug "---------- *order status update* -----------"
+    Rails.logger.debug "value:    #{printer_order.external_id}"
+    Rails.logger.debug "---------- ***** -----------"
     return_data = {}
 
     # look at fulfillmentState to get status.
@@ -536,7 +552,7 @@ class SpreadshirtAdapter
 
       if fulfillment_state == "SHIPPED"
         # get the tracking id
-        parcel_id = oi_elem.css('/shipping/parcelDelivery')[0][:id]
+        parcel_id = oi_elem.css('/shipping/parcelDeliverys/parcelDelivery')[0][:id]
         line_item_data.merge!(shipping_data[parcel_id])
       end
 

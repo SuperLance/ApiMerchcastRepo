@@ -15,13 +15,13 @@ class FulfillService
   def submit_printer_orders
     printer_order_list = PrinterOrder.ready_to_submit
     printer_order_list.each do |po|
-      # begin
+      begin
         po.send_order_to_printer!
-      # rescue => e
-      #   Rails.logger.error { "Error sending sending order to printer for PrinterOrder #{po.id}, #{e.message} #{e.backtrace.join("\n")}" }
-      #   po.status = "Error"
-      #   po.save
-      # end
+      rescue => e
+        Rails.logger.error { "Error sending sending order to printer for PrinterOrder #{po.id}, #{e.message} #{e.backtrace.join("\n")}" }
+        po.status = "Error"
+        po.save
+      end
     end
   end
 

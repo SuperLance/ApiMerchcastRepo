@@ -14,7 +14,7 @@ class Api::OrdersController < ApplicationController
       # check if we are just getting closed orders
       if params[:filter].present? and params[:filter].downcase == "completed"
         @orders = Order.by_user_admin_all(current_user).completed
-      else
+      elsif params[:filter].downcase == "all" or params[:filter].downcase == "received" 
         #
         # Check stores for new orders
         #
@@ -46,6 +46,20 @@ class Api::OrdersController < ApplicationController
           # get current orders
           @orders = Order.by_user_admin_all(current_user).received
         end
+      else
+        fulfill_service = FulfillService.new
+        if current_user.admin? and params[:filter].downcase == "fulfill"
+          fulfill_service.fulfill_orders
+        elsif current_user.admin? and params[:filter].downcase == "submit"
+          fulfill_service.submit_printer_orders
+        elsif current_user.admin? and params[:filter].downcase == "update"
+          fulfill_service.update_printer_order_status
+        elsif current_user.admin? and  params[:filter].downcase == "save"
+          fulfill_service.sync_fulfillment_info
+        else
+
+        end
+        @orders = Order.by_user_admin_all(current_user).all
       end
     end
 

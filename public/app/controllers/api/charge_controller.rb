@@ -88,30 +88,34 @@ class Api::ChargeController < ApplicationController
       end
     else
       begin
-        @charge_arr = Stripe::Charge.create(customer: @credit_customer.cus_id,
+        charge_arr = Stripe::Charge.create(customer: @credit_customer.cus_id,
                               amount: (params[:charge].to_f * 100).to_i,
                               description: "balance",
                               currency: 'usd')
-
         @balance = Balance.where(:user_id => current_user.id).first_or_create()
         @balance[:balance] = @balance[:balance].to_f+params[:charge].to_f 
+        Rails.logger.debug "---------- * * -----------"
+        Rails.logger.debug "value:   #{current_user.balances.inspect} "
+        Rails.logger.debug "---------- ***** -----------"
+        current_user.balances << @balance
         @balance.save
+        
 
         @charge_history = ChargeHistory.new;
         @charge_history.user_id = current_user.id
-        @charge_history.amount = @charge_arr.amount/100
-        @charge_history.account_type = @charge_arr.source.brand
-        @charge_history.lastfour = @charge_arr.source.last4
-        @charge_history.status = @charge_arr.status
+        @charge_history.amount = charge_arr.amount/100
+        @charge_history.account_type = charge_arr.source.brand
+        @charge_history.lastfour = charge_arr.source.last4
+        @charge_history.status = charge_arr.status
         @charge_history.save
 
         @charge = ChargeHistory.by_user(current_user).all.order('created_at DESC')
 
         render json: {:balance => @balance[:balance].to_f, :charge => @charge}
       rescue => e
-        logger.debug "-----------------'''''''-----"
-        logger.debug e.message
-        logger.debug "-----------------'''''''-----"
+        Rails.logger.debug "---------- * * -----------"
+        Rails.logger.debug "value:   #{e.message} "
+        Rails.logger.debug "---------- ***** -----------"
         render json: {:error => e.message}, status: :unprocessable_entity and return
       end
     end

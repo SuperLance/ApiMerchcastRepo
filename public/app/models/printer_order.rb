@@ -37,7 +37,6 @@ class PrinterOrder < ActiveRecord::Base
     adapter = printer.get_adapter
 
     return_data = adapter.check_order_status(self)
-
     # return data is by line item, so iterate over all of them
     return_data.keys.each do |order_line_item_id|
       oli_data = return_data[order_line_item_id]

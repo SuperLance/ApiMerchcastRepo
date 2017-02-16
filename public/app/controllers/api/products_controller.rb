@@ -19,7 +19,6 @@ class Api::ProductsController < ApplicationController
   # POST /products.json
   def create
     @product = Product.new(product_params)
-
     current_user.products << @product
 
     if @product.save
