@@ -12,7 +12,7 @@ class User < ActiveRecord::Base
   has_many :products, dependent: :destroy
   has_many :listings, dependent: :destroy
   has_many :order_line_items, dependent: :destroy
+  has_many :balances, dependent: :destroy
 
   belongs_to :shop
-  belongs_to :balance
 end

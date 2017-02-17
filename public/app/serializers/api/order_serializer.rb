@@ -17,6 +17,7 @@ class Api::OrderSerializer < ActiveModel::Serializer
             :shipping_country,
             :shipping_country_code,
             :status,
+            :fund_status,
             :completed_at,
   					:created_at,
   					:updated_at

@@ -36,6 +36,35 @@ class Api::OrdersController < ApplicationController
           end
         end
 
+        ##========== *balance status check* ===========##
+        if current_user.admin?
+          @users = User.all
+        else
+          @users = [current_user]
+        end
+
+        if !@users.nil?
+          @users.each do |user|
+            if !user.orders.nil?
+              sum_price = 0
+              user.orders.each do |order|
+                sum_price += order.price 
+              end
+              if !user.balances[0].nil? and sum_price.to_f < user.balances[0].balance.to_f
+                user.orders.each do |order|
+                  order.fund_status = true
+                  order.save
+                end
+              else
+                user.orders.each do |order|
+                  order.fund_status = false
+                  order.save
+                end
+              end
+            end
+          end 
+        end
+        ##========== ***** ==========##
         #
         # Get the orders based on filter
         #

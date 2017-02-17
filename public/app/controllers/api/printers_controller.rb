@@ -38,6 +38,7 @@ class Api::PrintersController < ApplicationController
     # validate the printer data
     adapter = @printer.get_adapter
     return_data = adapter.validate_connection(@printer)
+
     # bail out and return error
     if 200 != return_data[:return_code]
       render json: return_data, :status => return_data[:return_code] and return

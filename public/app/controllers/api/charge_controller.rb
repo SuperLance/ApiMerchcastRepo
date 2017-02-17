@@ -94,13 +94,9 @@ class Api::ChargeController < ApplicationController
                               currency: 'usd')
         @balance = Balance.where(:user_id => current_user.id).first_or_create()
         @balance[:balance] = @balance[:balance].to_f+params[:charge].to_f 
-        Rails.logger.debug "---------- * * -----------"
-        Rails.logger.debug "value:   #{current_user.balances.inspect} "
-        Rails.logger.debug "---------- ***** -----------"
         current_user.balances << @balance
         @balance.save
         
-
         @charge_history = ChargeHistory.new;
         @charge_history.user_id = current_user.id
         @charge_history.amount = charge_arr.amount/100
@@ -113,9 +109,6 @@ class Api::ChargeController < ApplicationController
 
         render json: {:balance => @balance[:balance].to_f, :charge => @charge}
       rescue => e
-        Rails.logger.debug "---------- * * -----------"
-        Rails.logger.debug "value:   #{e.message} "
-        Rails.logger.debug "---------- ***** -----------"
         render json: {:error => e.message}, status: :unprocessable_entity and return
       end
     end

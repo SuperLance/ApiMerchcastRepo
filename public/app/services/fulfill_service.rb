@@ -1,6 +1,9 @@
 class FulfillService
   def fulfill_orders
     order_list = Order.print_status_new
+    Rails.logger.debug "---------- * * -----------"
+    Rails.logger.debug "value:    #{order_list.inspect}"
+    Rails.logger.debug "---------- ***** -----------"
     order_list.each do |order|
       begin
         order.fulfill!

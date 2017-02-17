@@ -11,17 +11,20 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170128200643) do
+ActiveRecord::Schema.define(version: 20170216214815) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
   create_table "balances", force: :cascade do |t|
-    t.float    "balance",    default: 0.0
     t.integer  "user_id"
+    t.float    "balance",    default: 0.0
+    t.float    "test",       default: 0.0
     t.datetime "created_at",               null: false
     t.datetime "updated_at",               null: false
   end
+
+  add_index "balances", ["user_id"], name: "index_balances_on_user_id", using: :btree
 
   create_table "charge_histories", force: :cascade do |t|
     t.datetime "created_at",   null: false
@@ -200,8 +203,8 @@ ActiveRecord::Schema.define(version: 20170128200643) do
     t.datetime "order_date"
     t.integer  "print_status"
     t.string   "tracking"
-    t.datetime "created_at",                                     null: false
-    t.datetime "updated_at",                                     null: false
+    t.datetime "created_at",                                                     null: false
+    t.datetime "updated_at",                                                     null: false
     t.integer  "customer_id"
     t.decimal  "price",                 precision: 10, scale: 2
     t.string   "status"
@@ -215,6 +218,7 @@ ActiveRecord::Schema.define(version: 20170128200643) do
     t.string   "shipping_country"
     t.string   "shipping_country_code"
     t.string   "shipping_state_code"
+    t.boolean  "fund_status",                                    default: false
   end
 
   add_index "orders", ["store_id"], name: "index_orders_on_store_id", using: :btree

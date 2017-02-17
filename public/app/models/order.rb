@@ -32,7 +32,7 @@ class Order < ActiveRecord::Base
   scope :orders_last_month_aligned, -> { where(order_date: ((Date.today - 1.month).beginning_of_month)..((Date.today - 1.month).end_of_month.end_of_day))}
 
   # scope for our printer fultillment
-  scope :print_status_new, -> { where(print_status: PRINT_STATUS_NEW) }
+  scope :print_status_new, -> { where(print_status: PRINT_STATUS_NEW, fund_status: true) }
 
 
   # constants for print status
